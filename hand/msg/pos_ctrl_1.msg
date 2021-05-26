@@ -1,0 +1,2 @@
+int32 motor1_states
+int32 motor2_states
