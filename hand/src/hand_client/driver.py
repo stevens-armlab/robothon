@@ -13,7 +13,7 @@ class hand_driver:
 
         self.current_load = None
         self.grasp_state = None
-        self.spread_pos = 215.0
+        self.spread_pos = 525.0
         self.unspread_pos = 708.0
 
     def grasp(self, speed=20, force=30, force_threshold=90, pos_max=3883):
@@ -21,6 +21,9 @@ class hand_driver:
         self.start_grasp_pub.publish(grasp_msg)
 
     def ungrasp(self, position=1690):
+        self.set_grasp_position(position)
+
+    def set_grasp_position(self, position=1690):
         grasp_pos_setpoint = Float64(data=position)
         self.grasp_set_pos_pub.publish(grasp_pos_setpoint)
 

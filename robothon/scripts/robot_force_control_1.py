@@ -7,9 +7,12 @@ from robot_client.robot import robot
 desired_twist = np.array([0, 0, 0, 0, 0, 0])
 jog_linear_speed = 0.2  # m/s
 jog_angular_speed = 0.5  # rad/s
-
+enable = False
 
 def joy_cb(data):
+    global enable
+    enable = data.buttons[0]
+
     x_vel = -data.axes[0] * jog_linear_speed
     y_vel = data.axes[1] * jog_linear_speed
     z_vel = data.axes[4] * jog_linear_speed
@@ -32,12 +35,14 @@ def joy_cb(data):
     elif data.buttons[3]:
         robot1.hand.unspread()
 
-
 if __name__ == '__main__':
-    rospy.init_node('robot_teleop', anonymous=True)
+    rospy.init_node('robot_force_control', anonymous=True)
     robot1 = robot()
     rospy.Subscriber("/joy", Joy, joy_cb)
-    rate = rospy.Rate(10)
+    rate = rospy.Rate(25)
     while not rospy.is_shutdown():
-        robot1.arm.jog(desired_twist)
+        if enable:
+            robot1.force_control(v_des=desired_twist[0:3], fz=-10)
+        else:
+            robot1.arm.jog(desired_twist)
         rate.sleep()

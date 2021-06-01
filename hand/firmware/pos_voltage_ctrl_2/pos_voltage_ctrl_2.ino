@@ -71,6 +71,9 @@ void motor_setup();
 
 std_msgs::Int8 grasp_state_msg;
 std_msgs::Float64 load_msg;
+std_msgs::Float64 grasp_position_msg;
+std_msgs::Float64 spread_position_msg;
+
 
 ros::Subscriber<std_msgs::Float64> spread_sub("hand/spread/set_position", &hand_spread_cb);
 ros::Subscriber<std_msgs::Float64> grasp_set_pos_sub("hand/grasp/set_position", &hand_grasp_set_position_cb);
@@ -80,6 +83,9 @@ ros::Subscriber<std_msgs::Bool> stop_grasp_sub("hand/grasp/stop", &hand_grasp_st
 
 ros::Publisher grasp_state_pub("hand/grasp/state", &grasp_state_msg);
 ros::Publisher grasp_load_pub("hand/grasp/load", &load_msg);
+ros::Publisher grasp_position_pub("hand/grasp/position", &grasp_position_msg);
+ros::Publisher spread_position_pub("hand/spread/position", &spread_position_msg);
+
 
 
 void setup() {
@@ -92,6 +98,9 @@ void setup() {
 //  nh.advertise(pub_motor_states);
   nh.advertise(grasp_load_pub);
   nh.advertise(grasp_state_pub);
+  nh.advertise(grasp_position_pub);
+  nh.advertise(spread_position_pub);
+
   nh.subscribe(spread_sub);
   nh.subscribe(grasp_set_pos_sub);
   nh.subscribe(start_grasp_sub);
@@ -134,6 +143,13 @@ void loop() {
   
   load_msg.data = dxl_1.readControlTableItem(PRESENT_LOAD, DXL_ID_1);
   grasp_load_pub.publish(&load_msg);
+
+  grasp_position_msg.data = dxl_1.getPresentPosition(DXL_ID_1, UNIT_RAW);
+  grasp_position_pub.publish(&grasp_position_msg);
+
+  spread_position_msg.data = dxl_2.getPresentPosition(DXL_ID_2, UNIT_RAW);
+  spread_position_pub.publish(&spread_position_msg);
+
   
   nh.spinOnce();
   delay(10);

@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>  
+  <include file="$(find ur_robot_driver)/launch/ur5_bringup.launch">
+    <arg name="robot_ip" value="192.168.1.11"/>
+  </include>
+
+  <include file="$(find ur5_moveit_config)/launch/ur5_moveit_stevens.launch">
+    <arg name="hardware" value="true"/>
+  </include>
+
+  <node name="joy_node" pkg="joy" type="joy_node" output="log" respawn="false"/>
+</launch>
