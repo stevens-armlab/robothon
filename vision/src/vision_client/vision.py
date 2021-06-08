@@ -9,13 +9,10 @@ class d435i:
         self.pcl_topic = 'camera/depth/color/points'
         self.latest_ros_cloud = None
         self.registration = icp_registration()
-        rospy.Subscriber(self.pcl_topic, PointCloud2, self.ros_pcl_callback)
-
-    def ros_pcl_callback(self, ros_cloud):
-        self.latest_ros_cloud = ros_cloud
 
     def get_transform(self):
-        t, a, b = self.registration.get_transform(self.latest_ros_cloud, view_pcl_overlay=False)
+        ros_pcl = rospy.wait_for_message(self.pcl_topic, PointCloud2)
+        t, a, b = self.registration.get_transform(ros_pcl, view_pcl_overlay=False)
         return t, a, b
 
     def show_transform(self):

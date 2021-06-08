@@ -6,7 +6,7 @@ max_iteration_num = 100
 
 def load_complete_model():
     pcds = []
-    complete_model_path = "/home/wangweihan/PycharmProjects/MergePointClouds/complete_model.pcd"
+    complete_model_path = "/home/kevin/ros_ws/robothon_ws/src/robothon/vision/point_clouds/complete_model.pcd"
     pcd = o3d.io.read_point_cloud(complete_model_path)
     pcds.append(pcd)
     return pcds

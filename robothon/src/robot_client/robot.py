@@ -7,22 +7,9 @@ from vision_client.vision import d435i
 import numpy as np
 import geometry_msgs
 import tf2_ros, tf
+from tf import TransformListener
 import open3d as o3d
 import os
-# ee_T_camera_depth_optical_frame = np.array([[-0., -0.1736453, 0.98480826, 0.141815],
-#                                             [-0.70703996, -0.6964304, -0.12279737, 0.03879],
-#                                             [0.70717359, -0.6962988, -0.12277416, 0.049377],
-#                                             [0., 0., 0., 1.]])
-# camera_depth_optical_frame_T_camera_link = np.array([[0, -1, 0, 0],
-#                                  [0, 0, -1, 0],
-#                                  [1, 0, 0, 0],
-#                                  [0, 0, 0, 1]])
-# ee_T_camera_link = np.array([[0.98480826, 0., 0.1736453, 0.141815],
-#                              [-0.12279737, 0.70703996, 0.6964304, 0.03879],
-#                              [-0.12277416, -0.70717359, 0.6962988, 0.049377],
-#                              [0., 0., 0., 1.]])
-
-
 
 class robot:
     def __init__(self):
@@ -53,7 +40,10 @@ class robot:
         self.ee_T_camera_link = np.dot(self.ee_T_camera_depth_optical_frame,
                                        self.camera_depth_optical_frame_T_camera_link)
 
-
+        task_board_T_button_trans = [0.079, -0.147, 0.163]
+        task_board_T_button_rot = [0.597, 0.523, 0.503, -0.343]
+        self.task_board_T_button = tf.transformations.quaternion_matrix(task_board_T_button_rot)
+        self.task_board_T_button[0:3, 3] = task_board_T_button_trans
 
         br = tf2_ros.StaticTransformBroadcaster()
         static_transformStamped = geometry_msgs.msg.TransformStamped()
@@ -183,6 +173,20 @@ class robot:
         self.arm.enable_traj_controller()
         # position of object expressed in {b}
         self.p_obj_b = p_obj_b
+
+        br = tf2_ros.StaticTransformBroadcaster()
+        static_transformStamped = geometry_msgs.msg.TransformStamped()
+        static_transformStamped.header.stamp = rospy.Time.now()
+        static_transformStamped.header.frame_id = "base_link"
+        static_transformStamped.child_frame_id = "task_board_center"
+        static_transformStamped.transform.translation.x = p_obj_b[0]
+        static_transformStamped.transform.translation.y = p_obj_b[1]
+        static_transformStamped.transform.translation.z = p_obj_b[2]
+        static_transformStamped.transform.rotation.x = 0
+        static_transformStamped.transform.rotation.y = 0
+        static_transformStamped.transform.rotation.z = 0
+        static_transformStamped.transform.rotation.w = 1
+        br.sendTransform(static_transformStamped)
 
         # Start position of camera in base frame
         p_c_b = np.array((0, 0.347, 0.475))

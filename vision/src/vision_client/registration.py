@@ -7,12 +7,13 @@ import numpy as np
 class icp_registration:
     def __init__(self):
         self.voxel_size = 0.02
-        self.source_path = "../../point_clouds/complete_model.pcd"
+        self.source_path = "/home/kevin/ros_ws/robothon_ws/src/robothon/vision/point_clouds/complete_model.pcd"
         self.source_pcd = o3d.io.read_point_cloud(self.source_path)
         self.source_pcd = o3d.geometry.voxel_down_sample(self.source_pcd, voxel_size=0.002)
 
     def get_transform(self, ros_cloud, view_pcl_overlay=False):
         target_pcd = self.convertCloudFromRosToOpen3d(ros_cloud)
+        target_pcd = o3d.geometry.voxel_down_sample(target_pcd, voxel_size=0.002)
         Twi, pose_graph = self.estimate([self.source_pcd, target_pcd])
         if view_pcl_overlay:
             self.visualize_combined_point_clouds([self.source_pcd, target_pcd], pose_graph)
