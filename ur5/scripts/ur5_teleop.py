@@ -23,7 +23,7 @@ if __name__ == '__main__':
     rospy.init_node('ur5_teleop', anonymous=True)
     robot = ur5()
     rospy.Subscriber("/joy", Joy, joy_cb)
-    rate = rospy.Rate(10)
+    rate = rospy.Rate(25)
     while not rospy.is_shutdown():
         robot.jog(desired_twist)
         rate.sleep()

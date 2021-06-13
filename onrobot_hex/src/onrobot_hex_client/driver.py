@@ -18,58 +18,65 @@ class onrobot_hex:
         self.verbose = False
         self.buffered = False
         self.binary = False
-        self.fx = None
-        self.fy = None
-        self.fz = None
-        self.tx = None
-        self.ty = None
-        self.tz = None
+        self._fx = None
+        self._fy = None
+        self._fz = None
+        self._tx = None
+        self._ty = None
+        self._tz = None
 
         self.lock = threading.Lock()
         self.client_thread = threading.Thread(target=self.rtde_client)
         self.client_thread.start()
         self.stop_thread = False
 
+        self._reference_zero = [0, 0, 0, 0, 0, 0]
+        self._zero_flag = False
+
         rospy.on_shutdown(self.close)
 
     def get_fx(self):
         with self.lock:
-            return self.fx
+            return self._fx
 
     def get_fy(self):
         with self.lock:
-            return self.fy
+            return self._fy
 
     def get_fz(self):
         with self.lock:
-            return self.fz
+            return self._fz
 
     def get_tx(self):
         with self.lock:
-            return self.tx
+            return self._tx
 
     def get_ty(self):
         with self.lock:
-            return self.ty
+            return self._ty
 
     def get_tz(self):
         with self.lock:
-            return self.tz
+            return self._tz
 
     def get_force(self):
         with self.lock:
-            return self.fx, self.fy, self.fz
+            return self._fx, self._fy, self._fz
 
     def get_torque(self):
         with self.lock:
-            return self.tx, self.ty, self.tz
+            return self._tx, self._ty, self._tz
 
     def get(self):
         with self.lock:
-            return self.fx, self.fy, self.fz, self.tx, self.ty, self.tz
+            return self._fx, self._fy, self._fz, self._tx, self._ty, self._tz
 
     def close(self):
         self.stop_thread = True
+
+    def zero(self):
+        with self.lock:
+            self._zero_flag = True
 
     def rtde_client(self):
         pub_fx = rospy.Publisher('onrobot/fx', Float64, queue_size=1)
@@ -101,8 +108,11 @@ class onrobot_hex:
             logging.error('Unable to start synchronization')
             thread.exit()
 
-        i = 1
         keep_running = True
+
+        # Used so that publishing to topics can occur outside of mutex lock
+        local_force_vars = [0, 0, 0, 0, 0, 0]
+
         while keep_running:
             try:
                 if self.buffered:
@@ -111,19 +121,35 @@ class onrobot_hex:
                     state = con.receive(self.binary)
                 if state is not None:
                     with self.lock:
-                        self.fx = state.input_double_register_30
-                        self.fy = state.input_double_register_31
-                        self.fz = state.input_double_register_32
-                        self.tx = state.input_double_register_33
-                        self.ty = state.input_double_register_34
-                        self.tz = state.input_double_register_35
-                    pub_fx.publish(state.input_double_register_30)
-                    pub_fy.publish(state.input_double_register_31)
-                    pub_fz.publish(state.input_double_register_32)
-                    pub_tx.publish(state.input_double_register_33)
-                    pub_ty.publish(state.input_double_register_34)
-                    pub_tz.publish(state.input_double_register_35)
-                    i += 1
+                        if self._zero_flag:
+                            self._reference_zero[0] = state.input_double_register_30
+                            self._reference_zero[1] = state.input_double_register_31
+                            self._reference_zero[2] = state.input_double_register_32
+                            self._reference_zero[3] = state.input_double_register_33
+                            self._reference_zero[4] = state.input_double_register_34
+                            self._reference_zero[5] = state.input_double_register_35
+                            self._fx = 0
+                            self._fy = 0
+                            self._fz = 0
+                            self._tx = 0
+                            self._ty = 0
+                            self._tz = 0
+                            local_force_vars = [0, 0, 0, 0, 0, 0]
+                            self._zero_flag = False
+                        else:
+                            self._fx = state.input_double_register_30 - self._reference_zero[0]
+                            self._fy = state.input_double_register_31 - self._reference_zero[1]
+                            self._fz = state.input_double_register_32 - self._reference_zero[2]
+                            self._tx = state.input_double_register_33 - self._reference_zero[3]
+                            self._ty = state.input_double_register_34 - self._reference_zero[4]
+                            self._tz = state.input_double_register_35 - self._reference_zero[5]
+                            local_force_vars = [self._fx, self._fy, self._fz, self._tx, self._ty, self._tz]
+                    pub_fx.publish(local_force_vars[0])
+                    pub_fy.publish(local_force_vars[1])
+                    pub_fz.publish(local_force_vars[2])
+                    pub_tx.publish(local_force_vars[3])
+                    pub_ty.publish(local_force_vars[4])
+                    pub_tz.publish(local_force_vars[5])
                 if self.stop_thread:
                     keep_running = False
             except rtde.RTDEException:

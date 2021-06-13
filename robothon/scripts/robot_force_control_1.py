@@ -24,25 +24,22 @@ def joy_cb(data):
 
     global robot1
     if data.buttons[5]:
-        robot1.hand.grasp(force=30)
+        robot1.gripper.grasp(force=40)
     elif data.buttons[4]:
-        robot1.hand.ungrasp()
+        robot1.gripper.ungrasp()
     else:
-        robot1.hand.stop_grasp()
+        robot1.gripper.stop_grasp()
 
-    if data.buttons[2]:
-        robot1.hand.spread()
-    elif data.buttons[3]:
-        robot1.hand.unspread()
 
 if __name__ == '__main__':
     rospy.init_node('robot_force_control', anonymous=True)
     robot1 = robot()
     rospy.Subscriber("/joy", Joy, joy_cb)
     rate = rospy.Rate(25)
+    robot1.force_sensor.zero()
     while not rospy.is_shutdown():
         if enable:
-            robot1.force_control(v_des=desired_twist[0:3], fz=-10)
+            robot1.force_control(v_des=desired_twist[0:3], fz=-5)
         else:
             robot1.arm.jog(desired_twist)
         rate.sleep()

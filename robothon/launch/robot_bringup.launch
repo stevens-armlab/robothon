@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>  
+
+  <include file="$(find ur5)/launch/ur5_bringup.launch"/>
+
+  <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+    <arg name="filters" value="pointcloud"/>
+  </include>
+
+  <node name="gripper_serial_com" pkg="rosserial_python" type="serial_node.py">
+    <param name="port" value="/dev/ttyACM0"/>
+    <param name="baud" value="115200"/>
+  </node>
+
+  <node pkg="tf" type="static_transform_publisher" name="hand_to_eye" args="0.11868435 -0.01867667 -0.06659424 0.97468851 -0.00426533  0.2232417 -0.01128076 /ee_link /camera_link 100"/>
+</launch>

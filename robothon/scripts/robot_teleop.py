@@ -4,10 +4,10 @@ import numpy as np
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Joy
 from robot_client.robot import robot
+
 desired_twist = np.array([0, 0, 0, 0, 0, 0])
 jog_linear_speed = 0.1  # m/s
 jog_angular_speed = 0.5  # rad/s
-
 
 def joy_cb(data):
     x_vel = -(data.axes[1] ** 3) * jog_linear_speed
@@ -27,17 +27,12 @@ def joy_cb(data):
     else:
         robot1.hand.stop_grasp()
 
-    if data.buttons[2]:
-        robot1.hand.spread()
-    elif data.buttons[3]:
-        robot1.hand.unspread()
-
 
 if __name__ == '__main__':
-    rospy.init_node('robot_teleop', anonymous=True)
+    rospy.init_node('robot_force_control', anonymous=True)
     robot1 = robot()
     rospy.Subscriber("/joy", Joy, joy_cb)
-    rate = rospy.Rate(10)
+    rate = rospy.Rate(25)
     while not rospy.is_shutdown():
         robot1.arm.jog(desired_twist)
         rate.sleep()

@@ -29,7 +29,7 @@ class ur5:
                                                             moveit_msgs.msg.DisplayTrajectory, queue_size=20)
 
         self.move_group.allow_replanning(True)
-        self.move_group.set_max_velocity_scaling_factor(0.05)
+        self.move_group.set_max_velocity_scaling_factor(0.15)
         self.move_group.set_max_acceleration_scaling_factor(0.1)
         ## We create a `DisplayTrajectory`_ publisher which is used later to publish
         ## trajectories for RViz to visualize:
