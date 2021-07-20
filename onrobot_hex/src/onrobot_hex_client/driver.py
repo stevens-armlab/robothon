@@ -5,6 +5,8 @@ import rospy
 import rospkg
 import rtde.rtde as rtde
 import rtde.rtde_config as rtde_config
+from geometry_msgs.msg import WrenchStamped
+from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
 import threading
 
@@ -18,12 +20,34 @@ class onrobot_hex:
         self.verbose = False
         self.buffered = False
         self.binary = False
+
+        self.hex_data = WrenchStamped()
         self._fx = None
         self._fy = None
         self._fz = None
         self._tx = None
         self._ty = None
         self._tz = None
+
+        # get ur5 joint data at same timestamp as onrobot hex data
+        # (not currently used, but functionality might be nice one day)
+        # these values can be found in onrobot_hex/config/record_configuration.xml
+        # an example where some values are uncommented is in record_configuration_publish_q.xml
+        # uncommend values you want to use
+        # self.ur5_data = JointState()
+        # self._actual_q = None #VECTOR6D
+        # self._actual_qd = None #VECTOR6D
+        # self._target_q = None #VECTOR6D
+        # self._target_qd = None #VECTOR6D
+        # other possible unused options
+        # self._target_qdd = None #VECTOR6D
+        # self._actual_current = None #VECTOR6D
+        # self._joint_control_output = None #VECTOR6D
+        # self._actual_TCP_pose = None #VECTOR6D
+        # self._actual_TCP_speed = None #VECTOR6D
+        # self._actual_TCP_force = None #VECTOR6D
+        # self._speed_scaling = None #DOUBLE
+        # self._target_speed_fraction = None #DOUBLE
 
         self.lock = threading.Lock()
         self.client_thread = threading.Thread(target=self.rtde_client)
@@ -79,12 +103,11 @@ class onrobot_hex:
             self._zero_flag = True
 
     def rtde_client(self):
-        pub_fx = rospy.Publisher('onrobot/fx', Float64, queue_size=1)
-        pub_fy = rospy.Publisher('onrobot/fy', Float64, queue_size=1)
-        pub_fz = rospy.Publisher('onrobot/fz', Float64, queue_size=1)
-        pub_tx = rospy.Publisher('onrobot/tx', Float64, queue_size=1)
-        pub_ty = rospy.Publisher('onrobot/ty', Float64, queue_size=1)
-        pub_tz = rospy.Publisher('onrobot/tz', Float64, queue_size=1)
+        hex_pub = rospy.Publisher('onrobot/hex_data', WrenchStamped, queue_size=1)
+        # uncomment if you want to publish rtde q state and q target values as described in the the init
+        # ur5_data_pub = rospy.Publisher('onrobot/ur5_state', JointState, queue_size=1)
+        # ur5_target_pub = rospy.Publisher('onrobot/ur5_target', JointState, queue_size=1)
+        # ur5_speed_scale_pub = rospy.Publisher('onrobot/ur5_speed_scale', Float64, queue_size=1)
 
         if self.verbose:
             logging.basicConfig(level=logging.INFO)
@@ -111,7 +134,10 @@ class onrobot_hex:
         keep_running = True
 
         # Used so that publishing to topics can occur outside of mutex lock
-        local_force_vars = [0, 0, 0, 0, 0, 0]
+        hex_data = WrenchStamped()
+        # ur5_data = JointState()
+        # ur5_target = JointState()
+        # speed_scale = Float64
 
         while keep_running:
             try:
@@ -134,7 +160,13 @@ class onrobot_hex:
                             self._tx = 0
                             self._ty = 0
                             self._tz = 0
-                            local_force_vars = [0, 0, 0, 0, 0, 0]
+                            hex_data.header.stamp = rospy.get_rostime()
+                            hex_data.wrench.force.x = self._fx
+                            hex_data.wrench.force.y = self._fy
+                            hex_data.wrench.force.z = self._fz
+                            hex_data.wrench.torque.x = self._tx
+                            hex_data.wrench.torque.y = self._ty
+                            hex_data.wrench.torque.z = self._tz
                             self._zero_flag = False
                         else:
                             self._fx = state.input_double_register_30 - self._reference_zero[0]
@@ -143,13 +175,40 @@ class onrobot_hex:
                             self._tx = state.input_double_register_33 - self._reference_zero[3]
                             self._ty = state.input_double_register_34 - self._reference_zero[4]
                             self._tz = state.input_double_register_35 - self._reference_zero[5]
-                            local_force_vars = [self._fx, self._fy, self._fz, self._tx, self._ty, self._tz]
-                    pub_fx.publish(local_force_vars[0])
-                    pub_fy.publish(local_force_vars[1])
-                    pub_fz.publish(local_force_vars[2])
-                    pub_tx.publish(local_force_vars[3])
-                    pub_ty.publish(local_force_vars[4])
-                    pub_tz.publish(local_force_vars[5])
+                            hex_data.header.stamp = rospy.get_rostime()
+                            hex_data.wrench.force.x = self._fx
+                            hex_data.wrench.force.y = self._fy
+                            hex_data.wrench.force.z = self._fz
+                            hex_data.wrench.torque.x = self._tx
+                            hex_data.wrench.torque.y = self._ty
+                            hex_data.wrench.torque.z = self._tz
+
+                        # uncomment if you want to publish q target and q state values from rtde
+                        # self._actual_q = state.actual_q  # VECTOR6D
+                        # self._actual_qd = state.actual_qd  # VECTOR6D
+                        # self._target_q = state.target_q  # VECTOR6D
+                        # self._target_qd = state.target_qd  # VECTOR6D
+                        # ur5_target.header.stamp = current_time
+                        # ur5_target.position = self._target_q
+                        # ur5_target.velocity = self._target_qd
+                        # ur5_data.header.stamp = current_time
+                        # ur5_data.position = self._actual_q
+                        # ur5_data.velocity = self._actual_qd
+                        # speed_scale = state.speed_scaling  # DOUBLE
+
+                        # self._target_qdd = state.target_qdd  # VECTOR6D
+                        # self._actual_current = state.actual_current  # VECTOR6D
+                        # self._joint_control_output = state.joint_control_output  # VECTOR6D
+                        # self._actual_TCP_pose = state.actual_TCP_pose  # VECTOR6D
+                        # self._actual_TCP_speed = state.actual_TCP_speed  # VECTOR6D
+                        # self._actual_TCP_force = state.actual_TCP_force  # VECTOR6D
+
+                    hex_pub.publish(hex_data)
+                    # uncomment if you want to publish q target and q state values from rtde
+                    # ur5_data_pub.publish(ur5_data)
+                    # ur5_target_pub.publish(ur5_target)
+                    # ur5_speed_scale_pub.publish(speed_scale)
+
                 if self.stop_thread:
                     keep_running = False
             except rtde.RTDEException:
