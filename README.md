@@ -1,0 +1,3 @@
+# robothon
+
+This is the Stevens Advanced Robot Manipulators Lab's code for the [2021 Robothon Grand Challenge](https://www.robothon-grand-challenge.com/), a competition centered around the theme of automating electronic waste disposal. For this competition, teams were given one month to develop a single arm manipulator system to perform tasks on a randomly positioned and oriented task board. The tasks included pressing a button, inserting and turning a key, removing and reinserting an ethernet plug, and removing batteries from a case. Our robot was able to successfully complete the button, key, and ethernet plug tasks, while only earning partial points for being able to remove the battery cover. Our final solution video can be found [here](https://youtu.be/7z6AVB7r07I).
